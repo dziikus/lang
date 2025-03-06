@@ -36,22 +36,6 @@ Visit the live demo at: [https://yourusername.github.io/lang](https://youruserna
 2. Open `index.html` in your browser
 3. Start learning English!
 
-## Deployment
-
-This app is automatically deployed to GitHub Pages using GitHub Actions. To deploy:
-
-1. Make sure your repository is named `username.github.io/lang` (replace "username" with your GitHub username)
-2. Go to your repository settings on GitHub:
-   - Navigate to Settings > Pages
-   - Under "Source", select "GitHub Actions"
-3. Push your changes to GitHub:
-   ```bash
-   git add .
-   git commit -m "Setup for GitHub Pages deployment"
-   git push origin main
-   ```
-4. The GitHub Action will automatically deploy your site
-
 ## License
 
 MIT License 

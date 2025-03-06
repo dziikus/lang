@@ -192,6 +192,9 @@ function checkAnswer() {
             updateProgress();
             showNextQuestion();
         }, 1000);
+        
+        // Spell out the word
+        spellWord(currentQuestion.english);
     } else {
         totalQuestions++;
         playSound('wrongSound');
@@ -283,6 +286,14 @@ function playSound(soundId) {
     const sound = document.getElementById(soundId);
     sound.currentTime = 0;
     sound.play().catch(error => console.log('Error playing sound:', error));
+}
+
+function spellWord(word) {
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.8; // Slightly slower rate for better clarity
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
 }
 
 // Initialize the app
