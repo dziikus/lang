@@ -29,11 +29,11 @@ const wordPairs = [
     },
     {
         english: "boil",
-        polish: "gotować"
+        polish: "gotować (np wodę)"
     },
     {
         english: "cook",
-        polish: "gotować"
+        polish: "gotować (np. mięso)"
     },
     {
         english: "cut",
