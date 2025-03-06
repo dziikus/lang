@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Learning App</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-container {
+            position: relative;
+            height: 100px;
+            margin: 20px 0;
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            animation: twinkle 4s infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        .lava {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(to bottom, #ff4500, #ff0000);
+            animation: lava 2s infinite;
+            box-shadow: 0 0 20px #ff4500;
+        }
+        .stone {
+            position: absolute;
+            bottom: 20px;
+            width: 30px;
+            height: 20px;
+            background: linear-gradient(to bottom, #808080, #696969);
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1;
+        }
+        .alien {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 30px;
+            height: 40px;
+            background: white;
+            border-radius: 15px 15px 0 0;
+            transition: left 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .alien::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .alien::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .alien .face {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .alien .face::before,
+        .alien .face::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin: 0 2px;
+        }
+        .alien .face::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 4px;
+            background: #4CAF50;
+            border-radius: 0 0 4px 4px;
+        }
+        .alien .body {
+            display: none;
+        }
+        .alien .arms {
+            display: none;
+        }
+        .alien .legs {
+            display: none;
+        }
+        .ufo {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            height: 30px;
+            background: linear-gradient(to bottom, #a0a0a0, #808080);
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .ufo::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 25px;
+            background: linear-gradient(to bottom, #c0c0c0, #a0a0a0);
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .ufo::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 10px;
+            background: linear-gradient(to bottom, #ffd700, #ffa500);
+            border-radius: 5px;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        .ufo .lights {
+            position: absolute;
+            bottom: 25px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .ufo .lights::before,
+        .ufo .lights::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #ffeb3b;
+        }
+        .jump {
+            animation: jump 0.5s ease;
+        }
+        @keyframes jump {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-40px) rotate(-5deg); }
+            75% { transform: translateY(-40px) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+        .question-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            font-size: 16px;
+            width: 200px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .stats {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .completion-screen {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .completion-screen h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            animation: bounce 1s ease infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .completion-screen h2 {
+            font-size: 1.8em;
+            margin: 20px 0;
+        }
+        .completion-screen ul {
+            list-style: none;
+            padding: 0;
+        }
+        .completion-screen li {
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>English Learning App</h1>
+        <div class="progress-container">
+            <div class="stars"></div>
+            <div class="lava"></div>
+            <div id="stones"></div>
+            <div class="alien" id="alien">
+                <div class="face"></div>
+            </div>
+            <div class="ufo">
+                <div class="lights"></div>
+            </div>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="question-container" id="questionContainer">
+            <div id="summary"></div>
+            <div id="questionArea">
+                <h2 id="question"></h2>
+                <input type="text" id="answer" placeholder="Enter your answer">
+                <button onclick="checkAnswer()">Check</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio elements for sound effects -->
+    <audio id="correctSound" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+    <audio id="wrongSound" src="https://assets.mixkit.co/active_storage/sfx/2014/2014-preview.mp3"></audio>
+    <audio id="completionSound" src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3"></audio>
+
+    <script>
+        const wordPairs = [
+        {
+    english: "breakfast",
+    polish: "śniadanie"
+  },
+  {
+    english: "dinner",
+    polish: "późny obiad"
+  },
+  {
+    english: "lunch",
+    polish: "obiad"
+  },
+  {
+    english: "meal",
+    polish: "posiłek"
+  },
+  {
+    english: "snack",
+    polish: "przekąska"
+  },
+  {
+    english: "supper",
+    polish: "kolacja"
+  },
+  {
+    english: "add",
+    polish: "dodawać"
+  },
+  {
+    english: "boil",
+    polish: "gotować"
+  },
+  {
+    english: "cook",
+    polish: "gotować"
+  },
+  {
+    english: "cut",
+    polish: "kroić"
+  },
+  {
+    english: "fry",
+    polish: "smażyć"
+  },
+  {
+    english: "peel",
+    polish: "obierać"
+  },
+  {
+    english: "put",
+    polish: "kłaść"
+  },
+  {
+    english: "serve",
+    polish: "podawać"
+  },
+  {
+    english: "delicious",
+    polish: "pyszny"
+  },
+  {
+    english: "a few",
+    polish: "kilka"
+  }
+        ];
+
+        let questions = [];
+        let currentQuestion = null;
+        let correctAnswers = 0;
+        let totalQuestions = 0;
+        let wordAttempts = {}; // Track attempts for each word
+        let completedWords = new Set(); // Track which words were completed correctly
+        let consecutiveIncorrect = false; // Track if the last attempt was incorrect
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createStones() {
+            const stonesContainer = document.getElementById('stones');
+            stonesContainer.innerHTML = '';
+            const containerWidth = document.querySelector('.progress-container').offsetWidth;
+            const stoneWidth = 30;
+            const ufoWidth = 80;
+            const padding = 40;
+            const availableWidth = containerWidth - stoneWidth - ufoWidth - padding;
+            const stoneSpacing = availableWidth / (wordPairs.length - 1);
+            
+            for (let i = 0; i < wordPairs.length; i++) {
+                const stone = document.createElement('div');
+                stone.className = 'stone';
+                stone.style.left = `${padding + (i * stoneSpacing)}px`;
+                stonesContainer.appendChild(stone);
+            }
+        }
+
+        function initializeQuestions() {
+            // Get words that needed multiple attempts
+            const repeatedWords = Object.entries(wordAttempts)
+                .filter(([word, attempts]) => attempts > 1)
+                .map(([word]) => {
+                    const polishWord = word.split(' (')[0];
+                    return wordPairs.find(pair => pair.polish === polishWord);
+                });
+
+            questions = repeatedWords.length > 0 ? repeatedWords : [...wordPairs];
+            shuffleArray(questions);
+            correctAnswers = 0;
+            totalQuestions = 0;
+            wordAttempts = {};
+            completedWords.clear();
+            consecutiveIncorrect = false;
+            document.getElementById('summary').innerHTML = '';
+            document.getElementById('questionArea').style.display = 'block';
+            createStones();
+            updateProgress();
+            showNextQuestion();
+        }
+
+        function showNextQuestion() {
+            if (questions.length === 0) {
+                showSummary();
+                return;
+            }
+
+            currentQuestion = questions.pop();
+            document.getElementById('question').textContent = 
+                `What is the English word for "${currentQuestion.polish}"?`;
+            document.getElementById('answer').value = '';
+            document.getElementById('answer').focus();
+        }
+
+        function playSound(soundId) {
+            const sound = document.getElementById(soundId);
+            sound.currentTime = 0; // Reset sound to start
+            sound.play().catch(error => console.log('Sound play failed:', error));
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer').value.trim().toLowerCase();
+            const correctAnswer = currentQuestion.english.toLowerCase();
+
+            // Initialize or increment attempts for this word
+            const wordKey = `${currentQuestion.polish} (${currentQuestion.english})`;
+            wordAttempts[wordKey] = (wordAttempts[wordKey] || 0) + 1;
+
+            if (userAnswer === correctAnswer) {
+                playSound('correctSound');
+                correctAnswers++;
+                totalQuestions++;
+                completedWords.add(wordKey);
+                consecutiveIncorrect = false;
+                showNextQuestion();
+            } else {
+                playSound('wrongSound');
+                if (!consecutiveIncorrect) {
+                    // Only add back to questions list on first mistake
+                    questions.push(currentQuestion);
+                    shuffleArray(questions);
+                }
+                consecutiveIncorrect = true;
+                alert(`Wrong answer! The correct answer is "${currentQuestion.english}". Try again.`);
+                document.getElementById('answer').value = '';
+                document.getElementById('answer').focus();
+            }
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const remainingQuestions = questions.length;
+            const progress = ((wordPairs.length - remainingQuestions) / wordPairs.length) * 100;
+            const alien = document.getElementById('alien');
+            const containerWidth = document.querySelector('.progress-container').offsetWidth;
+            const stoneWidth = 30;
+            const ufoWidth = 80;
+            const padding = 40;
+            const availableWidth = containerWidth - stoneWidth - ufoWidth - padding;
+            const stoneSpacing = availableWidth / (wordPairs.length - 1);
+            
+            // Calculate alien position to land on the next stone
+            const currentStoneIndex = wordPairs.length - remainingQuestions;
+            const position = padding + (currentStoneIndex * stoneSpacing);
+            alien.style.left = `${position}px`;
+            
+            // Add jump animation when moving
+            alien.classList.add('jump');
+            setTimeout(() => alien.classList.remove('jump'), 500);
+            
+            document.getElementById('stats').textContent = 
+                `Remaining questions: ${remainingQuestions} out of ${wordPairs.length}`;
+        }
+
+        function showSummary() {
+            playSound('completionSound');
+            let summaryHTML = '<div class="completion-screen">';
+            summaryHTML += '<h1>🎉 Congratulations! 🎉</h1>';
+            summaryHTML += '<h2>You have mastered all the words!</h2>';
+            
+            // Show count of correctly answered words
+            summaryHTML += `<h3>Final Score: ${completedWords.size} out of ${wordPairs.length} words correct</h3>`;
+
+            // Show repeated words with attempts
+            const repeatedWords = Object.entries(wordAttempts)
+                .filter(([word, attempts]) => attempts > 1)
+                .sort((a, b) => b[1] - a[1]);
+
+            if (repeatedWords.length > 0) {
+                summaryHTML += '<h3>Words that needed extra practice:</h3><ul>';
+                for (const [word, attempts] of repeatedWords) {
+                    summaryHTML += `<li>${word} (${attempts} attempts)</li>`;
+                }
+                summaryHTML += '</ul>';
+            }
+
+            summaryHTML += '<h2>Great job! You\'ve completed the lesson!</h2>';
+            summaryHTML += '</div>';
+            
+            document.getElementById('summary').innerHTML = summaryHTML;
+            document.getElementById('questionArea').style.display = 'none';
+            
+            // Trigger confetti animation
+            const duration = 5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({
+                    ...defaults,
+                    particleCount,
+                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                });
+                confetti({
+                    ...defaults,
+                    particleCount,
+                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                });
+            }, 250);
+        }
+
+        // Handle Enter key press
+        document.getElementById('answer').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // Initialize the app
+        initializeQuestions();
+    </script>
+</body>
+</html> 
