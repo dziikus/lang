@@ -62,7 +62,47 @@ const wordPairs = [
     {
         english: "a few",
         polish: "kilka"
-    }
+    },
+    {
+        english: "fork",
+        polish "widelec"
+      },
+      {
+        english: "glass",
+        polish "szklanka"
+      },
+      {
+        english: "hungry",
+        polish "głodny"
+      },
+      {
+        english: "knife",
+        polish "nóż"
+      },
+      {
+        english: "pill",
+        polish "tabletka"
+      },
+      {
+        english: "plate",
+        polish "talerz"
+      },
+      {
+        english: "slice",
+        polish "plasterek (np. wędliny), kromka"
+      },
+      {
+        english: "spoon",
+        polish "łyżka"
+      },
+      {
+        english: "tasty",
+        polish "smaczny"
+      },
+      {
+        english: "vinegar",
+        polish "ocet"
+      }
 ];
 
 let questions = [];
