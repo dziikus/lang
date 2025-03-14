@@ -1,110 +1,139 @@
-const wordPairs = [
-    {
-        english: "breakfast",
-        polish: "śniadanie"
-    },
-    {
-        english: "dinner",
-        polish: "późny obiad"
-    },
-    {
-        english: "lunch",
-        polish: "obiad"
-    },
-    {
-        english: "meal",
-        polish: "posiłek"
-    },
-    {
-        english: "snack",
-        polish: "przekąska"
-    },
-    {
-        english: "supper",
-        polish: "kolacja"
-    },
-    {
-        english: "add",
-        polish: "dodawać"
-    },
-    {
-        english: "boil",
-        polish: "gotować (np wodę)"
-    },
-    {
-        english: "cook",
-        polish: "gotować (np. mięso)"
-    },
-    {
-        english: "cut",
-        polish: "kroić"
-    },
-    {
-        english: "fry",
-        polish: "smażyć"
-    },
-    {
-        english: "peel",
-        polish: "obierać"
-    },
-    {
-        english: "put",
-        polish: "kłaść"
-    },
-    {
-        english: "serve",
-        polish: "podawać"
-    },
-    {
-        english: "delicious",
-        polish: "pyszny"
-    },
-    {
-        english: "a few",
-        polish: "kilka"
-    },
-    {
-        english: "fork",
-        polish: "widelec"
-      },
-      {
-        english: "glass",
-        polish: "szklanka"
-      },
-      {
-        english: "hungry",
-        polish: "głodny"
-      },
-      {
-        english: "knife",
-        polish: "nóż"
-      },
-      {
-        english: "pill",
-        polish: "tabletka"
-      },
-      {
-        english: "plate",
-        polish: "talerz"
-      },
-      {
-        english: "slice",
-        polish: "plasterek (np. wędliny), kromka"
-      },
-      {
-        english: "spoon",
-        polish: "łyżka"
-      },
-      {
-        english: "tasty",
-        polish: "smaczny"
-      },
-      {
-        english: "vinegar",
-        polish: "ocet"
-      }
-];
+const wordPairsList = {
+    list5: [
+        {
+            english: "breakfast",
+            polish: "śniadanie"
+        },
+        {
+            english: "dinner",
+            polish: "późny obiad"
+        },
+        {
+            english: "lunch",
+            polish: "obiad"
+        },
+        {
+            english: "meal",
+            polish: "posiłek"
+        },
+        {
+            english: "snack",
+            polish: "przekąska"
+        },
+        {
+            english: "supper",
+            polish: "kolacja"
+        },
+        {
+            english: "add",
+            polish: "dodawać"
+        },
+        {
+            english: "boil",
+            polish: "gotować (np wodę)"
+        },
+        {
+            english: "cook",
+            polish: "gotować (np. mięso)"
+        },
+        {
+            english: "cut",
+            polish: "kroić"
+        },
+        {
+            english: "fry",
+            polish: "smażyć"
+        },
+        {
+            english: "peel",
+            polish: "obierać"
+        },
+        {
+            english: "put",
+            polish: "kłaść"
+        },
+        {
+            english: "serve",
+            polish: "podawać"
+        },
+        {
+            english: "delicious",
+            polish: "pyszny"
+        },
+        {
+            english: "a few",
+            polish: "kilka"
+        }
+    ],
+    list6: [
+        {
+            english: "apple",
+            polish: "jabłko"
+        },
+        {
+            english: "banana",
+            polish: "banan"
+        },
+        {
+            english: "orange",
+            polish: "pomarańcza"
+        },
+        {
+            english: "grape",
+            polish: "winogrono"
+        },
+        {
+            english: "strawberry",
+            polish: "truskawka"
+        },
+        {
+            english: "blueberry",
+            polish: "borówka"
+        },
+        {
+            english: "raspberry",
+            polish: "malina"
+        },
+        {
+            english: "blackberry",
+            polish: "jeżyna"
+        },
+        {
+            english: "peach",
+            polish: "brzoskwinia"
+        },
+        {
+            english: "pear",
+            polish: "gruszka"
+        },
+        {
+            english: "plum",
+            polish: "śliwka"
+        },
+        {
+            english: "cherry",
+            polish: "wiśnia"
+        },
+        {
+            english: "watermelon",
+            polish: "arbuz"
+        },
+        {
+            english: "melon",
+            polish: "melon"
+        },
+        {
+            english: "pineapple",
+            polish: "ananas"
+        },
+        {
+            english: "lemon",
+            polish: "cytryna"
+        }
+    ]
+};
 
+let wordPairs = [];
 let questions = [];
 let currentQuestion = null;
 let correctAnswers = 0;
@@ -336,7 +365,26 @@ function spellWord(word) {
     window.speechSynthesis.speak(utterance);
 }
 
+function showListSelection() {
+    const container = document.getElementById('questionArea');
+    container.style.display = 'block';
+    container.innerHTML = `
+        <div class="list-selection">
+            <h2>Choose a Word List</h2>
+            <div class="list-buttons">
+                <button onclick="selectList('list5')">List 5 (Food & Cooking)</button>
+                <button onclick="selectList('list6')">List 6 (Fruits)</button>
+            </div>
+        </div>
+    `;
+}
+
+function selectList(listName) {
+    wordPairs = wordPairsList[listName];
+    initializeQuestions();
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    initializeQuestions();
+    showListSelection();
 }); 
