@@ -415,4 +415,49 @@ button:disabled {
 
 .list-buttons button:active {
     transform: translateY(0);
+}
+
+.login-section {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 2rem auto;
+    max-width: 500px;
+}
+
+.login-section h2 {
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.login-section p {
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.user-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+#userName {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.sign-out-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    background: #dc3545;
+}
+
+.sign-out-btn:hover {
+    background: #c82333;
 } 

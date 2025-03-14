@@ -294,6 +294,7 @@ let wordAttempts = {};
 let completedWords = new Set();
 let consecutiveIncorrect = false;
 let hasShownError = false;
+let currentUser = null;
 
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -447,7 +448,6 @@ function showSummary() {
     const summary = document.getElementById('summary');
     const percentage = (correctAnswers / totalQuestions * 100).toFixed(1);
     
-    // Get words that needed multiple attempts
     const repeatedWords = Object.entries(wordAttempts)
         .filter(([word, attempts]) => attempts > 1)
         .map(([word]) => word);
@@ -487,7 +487,7 @@ function showSummary() {
     
     summary.innerHTML = `
         <div class="completion-screen">
-            <h1>🎉 Congratulations! 🎉</h1>
+            <h1>🎉 Congratulations, ${currentUser ? currentUser.name : 'Student'}! 🎉</h1>
             <div class="score">Your Score: ${percentage}%</div>
             <p>You completed ${totalQuestions} questions with ${correctAnswers} correct answers!</p>
             ${repeatedWords.length > 0 ? `
@@ -536,7 +536,29 @@ function selectList(listName) {
     initializeQuestions();
 }
 
-// Initialize the app
-document.addEventListener('DOMContentLoaded', () => {
+function handleCredentialResponse(response) {
+    // Decode the JWT token to get user information
+    const responsePayload = jwt_decode(response.credential);
+    
+    currentUser = {
+        name: responsePayload.name,
+        email: responsePayload.email,
+        picture: responsePayload.picture
+    };
+    
+    // Update UI
+    document.getElementById('userName').textContent = `Welcome, ${currentUser.name}!`;
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    
+    // Initialize the app
     showListSelection();
-}); 
+}
+
+function signOut() {
+    google.accounts.id.disableAutoSelect();
+    currentUser = null;
+    document.getElementById('loginSection').style.display = 'block';
+    document.getElementById('appContent').style.display = 'none';
+    document.getElementById('userName').textContent = '';
+} 
