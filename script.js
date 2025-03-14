@@ -67,69 +67,221 @@ const wordPairsList = {
     ],
     list6: [
         {
-            english: "apple",
-            polish: "jabłko"
+            english: "walk",
+            polish: "chodzić pieszo, spacerować"
         },
         {
-            english: "banana",
-            polish: "banan"
+            english: "wash",
+            polish: "myć (się)"
         },
         {
-            english: "orange",
-            polish: "pomarańcza"
+            english: "watch",
+            polish: "oglądać"
         },
         {
-            english: "grape",
-            polish: "winogrono"
+            english: "fast",
+            polish: "szybki"
         },
         {
-            english: "strawberry",
-            polish: "truskawka"
+            english: "scary",
+            polish: "przerażający"
         },
         {
-            english: "blueberry",
-            polish: "borówka"
+            english: "strong",
+            polish: "silny"
         },
         {
-            english: "raspberry",
-            polish: "malina"
+            english: "stupid",
+            polish: "głupi"
         },
         {
-            english: "blackberry",
-            polish: "jeżyna"
+            english: "tired",
+            polish: "zmęczony"
         },
         {
-            english: "peach",
-            polish: "brzoskwinia"
+            english: "ugly",
+            polish: "brzydki"
         },
         {
-            english: "pear",
-            polish: "gruszka"
+            english: "wet",
+            polish: "mokry"
         },
         {
-            english: "plum",
-            polish: "śliwka"
+            english: "bat",
+            polish: "nietoperz"
         },
         {
-            english: "cherry",
-            polish: "wiśnia"
+            english: "camel",
+            polish: "wielbłąd"
         },
         {
-            english: "watermelon",
-            polish: "arbuz"
+            english: "chimpanzee",
+            polish: "szympans"
         },
         {
-            english: "melon",
-            polish: "melon"
+            english: "flamingo",
+            polish: "flaming"
         },
         {
-            english: "pineapple",
-            polish: "ananas"
+            english: "killer whale",
+            polish: "orka"
         },
         {
-            english: "lemon",
-            polish: "cytryna"
-        }
+            english: "leopard",
+            polish: "lampart"
+        },
+        {
+            english: "back",
+            polish: "plecy, grzbiet"
+        },
+        {
+            english: "beach",
+            polish: "plaża"
+        },
+        {
+            english: "both",
+            polish: "obydwoje"
+        },
+        {
+            english: "closer",
+            polish: "bliżej"
+        },
+        {
+            english: "desert",
+            polish: "pustynia"
+        },
+        {
+            english: "e-pal",
+            polish: "korespondencyjny znajomy"
+        },
+        {
+            english: "free time",
+            polish: "czas wolny"
+        },
+        {
+            english: "holidays",
+            polish: "wakacje"
+        },
+        {
+            english: "I'm good at it.",
+            polish: "Jestem w tym dobry/dobra."
+        },
+        {
+            english: "idea",
+            polish: "pomysł"
+        },
+        {
+            english: "lots of",
+            polish: "dużo, mnóstwo"
+        },
+        {
+            english: "pet",
+            polish: "zwierzątko domowe"
+        },
+        {
+            english: "tourist",
+            polish: "turysta"
+        },
+        {
+            english: "usually",
+            polish: "zwykle"
+        },
+            {
+            english: "carry",
+            polish: "nosić"
+        },
+        {
+            english: "climb",
+            polish: "wspinać się"
+        },
+        {
+            english: "do tricks",
+            polish: "robić sztuczki"
+        },
+        {
+            english: "do, make",
+            polish: "robić"
+        },
+        {
+            english: "drink",
+            polish: "pić"
+        },
+       {
+            english: "drive",
+            polish: "prowadzić samochód, jeździć"
+        },
+        {
+            english: "eat",
+            polish: "jeść"
+        },
+        {
+            english: "fly",
+            polish: "latać"
+        },
+        {
+            english: "go",
+            polish: "iść"
+        },
+        {
+            english: "learn",
+            polish: "uczyć się, dowiadywać się"
+        },
+        {
+            english: "listen to",
+            polish: "słuchać"
+        },
+        {
+            english: "live",
+            polish: "mieszkać, żyć"
+        },
+       {
+            english: "meet",
+            polish: "spotykać, poznawać"
+       },
+       {
+            english: "play",
+            polish: "bawić się, grać"
+       },
+       {
+            english: "read",
+            polish: "czytać"
+       },
+          {
+            english: "ride",
+            polish: "jeździć"
+       },
+       {
+        english: "run",
+        polish: "biegać"
+       },
+    {
+        english: "rest",
+        polish: "odpoczywać"
+    },
+    {
+     english: "speak",
+     polish: "mówić"
+    },
+    {
+        english: "sleep",
+        polish: "spać"
+    },
+    {
+        english: "swim",
+        polish: "pływać"
+    },
+    {
+        english: "train",
+        polish: "trenować, ćwiczyć"
+    },
+    {
+        english: "visit",
+        polish: "odwiedzać"
+    },
+    {
+        english: "wake up",
+        polish: "budzić się"
+    }
     ]
 };
 
