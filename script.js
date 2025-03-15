@@ -1,5 +1,5 @@
 // Initialize Firebase and Firestore
-const db = firebase.firestore();
+// db is already initialized in index.html
 
 const wordPairsList = {
     list5: [
@@ -561,72 +561,164 @@ async function selectList(listName) {
 }
 
 async function handleCredentialResponse(response) {
-    const responsePayload = jwt_decode(response.credential);
-    
-    currentUser = {
-        name: responsePayload.name,
-        email: responsePayload.email,
-        picture: responsePayload.picture
-    };
-    
-    await loadUserData();
-    updateUserStatsDisplay();
-    
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('appContent').style.display = 'block';
-    
-    if (userStats.lastList) {
-        selectList(userStats.lastList);
-    } else {
-        showListSelection();
+    try {
+        if (!response.credential) {
+            console.error("No credential received in response");
+            return;
+        }
+
+        console.log("Attempting to sign in with credential");
+        
+        // Create a credential with the Google ID token
+        const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+        
+        // Sign in to Firebase with the credential
+        const userCredential = await firebase.auth().signInWithCredential(credential);
+        console.log("Firebase sign in successful:", userCredential);
+        
+        const responsePayload = jwt_decode(response.credential);
+        
+        currentUser = {
+            name: responsePayload.name,
+            email: responsePayload.email,
+            picture: responsePayload.picture,
+            uid: userCredential.user.uid
+        };
+        
+        console.log("Current user set:", currentUser);
+        
+        try {
+            await loadUserData();
+            updateUserStatsDisplay();
+            
+            // Hide login section and show app content
+            const loginSection = document.getElementById('loginSection');
+            const appContent = document.getElementById('appContent');
+            
+            if (loginSection && appContent) {
+                loginSection.style.display = 'none';
+                appContent.style.display = 'block';
+                
+                if (userStats.lastList) {
+                    selectList(userStats.lastList);
+                } else {
+                    showListSelection();
+                }
+            } else {
+                console.error("Required DOM elements not found");
+            }
+        } catch (error) {
+            console.error("Error loading user data:", error);
+            alert("There was an error loading your data. Please try refreshing the page.");
+        }
+    } catch (error) {
+        console.error("Error during sign-in:", error);
+        if (error.code === 'auth/configuration-not-found') {
+            alert("Authentication configuration error. Please ensure Google Sign-In is enabled in Firebase Console.");
+        } else {
+            alert("There was an error signing in. Please try again.");
+        }
     }
 }
 
 function signOut() {
-    google.accounts.id.disableAutoSelect();
-    currentUser = null;
-    document.getElementById('loginSection').style.display = 'block';
-    document.getElementById('appContent').style.display = 'none';
+    try {
+        google.accounts.id.disableAutoSelect();
+        firebase.auth().signOut();
+        currentUser = null;
+        document.getElementById('loginSection').style.display = 'block';
+        document.getElementById('appContent').style.display = 'none';
+    } catch (error) {
+        console.error("Error during sign-out:", error);
+    }
 }
 
 async function saveUserData() {
-    if (currentUser) {
-        const userData = {
-            stats: userStats,
-            lastUpdated: new Date().toISOString()
-        };
-        
-        try {
-            await db.collection('users').doc(currentUser.email).set(userData);
-            console.log('User data saved successfully');
-        } catch (error) {
-            console.error('Error saving user data:', error);
+    if (!currentUser) {
+        console.error('No current user found when trying to save data');
+        return;
+    }
+
+    const userData = {
+        stats: userStats,
+        lastUpdated: new Date().toISOString()
+    };
+    
+    try {
+        console.log('Attempting to save data for user:', currentUser.email);
+        // Use the user's email as the document ID
+        await db.collection('users').doc(currentUser.uid).set(userData);
+        console.log('User data saved successfully');
+    } catch (error) {
+        console.error('Error saving user data:', error);
+        if (error.code === 'permission-denied') {
+            console.error('Permission denied. Please check Firestore rules.');
+            alert('Unable to save your data. Please try signing out and back in.');
+        } else {
+            alert('There was an error saving your data. Your progress may not be saved.');
         }
+        throw error; // Re-throw to be handled by the caller
     }
 }
 
 async function loadUserData() {
-    if (currentUser) {
-        try {
-            const doc = await db.collection('users').doc(currentUser.email).get();
-            
-            if (doc.exists) {
-                const userData = doc.data();
-                userStats = userData.stats;
-                updateUserStatsDisplay();
-            } else {
-                userStats = {
-                    totalSessions: 0,
-                    wordsLearned: {},
-                    lastList: null,
-                    overallScore: 0,
-                    sessionHistory: []
-                };
-                await saveUserData();
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
+    if (!currentUser) {
+        console.error('No current user found when trying to load data');
+        return;
+    }
+
+    try {
+        // Debug logging
+        console.log('Current user state:', {
+            uid: currentUser.uid,
+            name: currentUser.name,
+            email: currentUser.email
+        });
+        
+        // Also verify Firebase Auth state
+        const currentAuthUser = firebase.auth().currentUser;
+        console.log('Firebase Auth current user:', currentAuthUser ? {
+            uid: currentAuthUser.uid,
+            email: currentAuthUser.email,
+            emailVerified: currentAuthUser.emailVerified
+        } : 'No auth user');
+
+        console.log('Attempting to load data for user:', currentUser.email);
+        // Use the user's email to fetch data
+        const doc = await db.collection('users').doc(currentUser.uid).get();
+        
+        if (doc.exists) {
+            console.log('User data found:', doc.data());
+            const userData = doc.data();
+            userStats = userData.stats;
+            updateUserStatsDisplay();
+        } else {
+            console.log('No existing user data found, initializing new user stats');
+            userStats = {
+                totalSessions: 0,
+                wordsLearned: {},
+                lastList: null,
+                overallScore: 0,
+                sessionHistory: []
+            };
+            await saveUserData();
         }
+    } catch (error) {
+        console.error('Error loading user data:', error);
+        // Log more details about the error
+        console.error('Error details:', {
+            code: error.code,
+            message: error.message,
+            stack: error.stack
+        });
+        
+        if (error.code === 'permission-denied') {
+            console.error('Permission denied. Please check Firestore rules.');
+            alert('Unable to access your data. Please try signing out and back in.');
+        } else {
+            alert('There was an error loading your data. Please try refreshing the page.');
+        }
+        throw error; // Re-throw to be handled by the caller
     }
 }
 

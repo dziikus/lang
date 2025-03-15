@@ -6,12 +6,13 @@
     <title>English Learning App</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async></script>
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     
     <!-- Initialize Firebase -->
     <script>
@@ -26,8 +27,66 @@
     };
     
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    const firebaseApp = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Configure Firebase Auth to use Google provider
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+
+    // Initialize Google Sign-In
+    window.onload = function() {
+        try {
+            console.log('Initializing Google Sign-In...');
+            google.accounts.id.initialize({
+                client_id: '962554821823-47m6vpf24eec684strc2r710ofefbttf.apps.googleusercontent.com',
+                callback: handleCredentialResponse,
+                auto_prompt: false,
+                itp_support: true,
+                context: 'signin',
+                ux_mode: 'popup',
+                use_fedcm_for_prompt: true
+            });
+
+            console.log('Google Sign-In initialized, rendering button...');
+            // Clear any existing buttons
+            const googleSignInDiv = document.getElementById("googleSignIn");
+            googleSignInDiv.innerHTML = '';
+
+            google.accounts.id.renderButton(
+                googleSignInDiv,
+                { 
+                    theme: "outline", 
+                    size: "large",
+                    width: 250,
+                    type: "standard",
+                    text: "signin_with",
+                    shape: "rectangular",
+                    logo_alignment: "left"
+                }
+            );
+
+            // Set up Firebase Auth state observer
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    console.log('User is signed in:', user);
+                } else {
+                    console.log('No user is signed in.');
+                }
+            });
+
+            // Log the current origin for debugging
+            console.log('Current origin:', window.location.origin);
+        } catch (error) {
+            console.error("Error initializing Google Sign-In:", error);
+            if (error.message && error.message.includes('origin_mismatch')) {
+                console.error("Origin mismatch error. Current origin:", window.location.origin);
+                alert("Authentication error: The application's domain is not authorized. Please contact the developer.");
+            }
+        }
+    };
     </script>
 </head>
 <body>
@@ -35,19 +94,7 @@
         <div id="loginSection" class="login-section">
             <h2>Welcome to English Learning App</h2>
             <p>Please sign in to start learning:</p>
-            <div id="g_id_onload"
-                data-client_id="962554821823-47m6vpf24eec684strc2r710ofefbttf.apps.googleusercontent.com"
-                data-callback="handleCredentialResponse"
-                data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin"
-                data-type="standard"
-                data-size="large"
-                data-theme="outline"
-                data-text="sign_in_with"
-                data-shape="rectangular"
-                data-logo_alignment="left">
-            </div>
+            <div id="googleSignIn"></div>
         </div>
         <div id="appContent" style="display: none;">
             <div class="user-info">
