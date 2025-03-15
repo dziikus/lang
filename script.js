@@ -1,3 +1,6 @@
+// Initialize Firebase and Firestore
+const db = firebase.firestore();
+
 const wordPairsList = {
     list5: [
         {
@@ -186,7 +189,7 @@ const wordPairsList = {
             english: "usually",
             polish: "zwykle"
         },
-            {
+        {
             english: "carry",
             polish: "nosić"
         },
@@ -206,7 +209,7 @@ const wordPairsList = {
             english: "drink",
             polish: "pić"
         },
-       {
+        {
             english: "drive",
             polish: "prowadzić samochód, jeździć"
         },
@@ -234,54 +237,54 @@ const wordPairsList = {
             english: "live",
             polish: "mieszkać, żyć"
         },
-       {
+        {
             english: "meet",
             polish: "spotykać, poznawać"
-       },
-       {
+        },
+        {
             english: "play",
             polish: "bawić się, grać"
-       },
-       {
+        },
+        {
             english: "read",
             polish: "czytać"
-       },
-          {
+        },
+        {
             english: "ride",
             polish: "jeździć"
-       },
-       {
-        english: "run",
-        polish: "biegać"
-       },
-    {
-        english: "rest",
-        polish: "odpoczywać"
-    },
-    {
-     english: "speak",
-     polish: "mówić"
-    },
-    {
-        english: "sleep",
-        polish: "spać"
-    },
-    {
-        english: "swim",
-        polish: "pływać"
-    },
-    {
-        english: "train",
-        polish: "trenować, ćwiczyć"
-    },
-    {
-        english: "visit",
-        polish: "odwiedzać"
-    },
-    {
-        english: "wake up",
-        polish: "budzić się"
-    }
+        },
+        {
+            english: "run",
+            polish: "biegać"
+        },
+        {
+            english: "rest",
+            polish: "odpoczywać"
+        },
+        {
+            english: "speak",
+            polish: "mówić"
+        },
+        {
+            english: "sleep",
+            polish: "spać"
+        },
+        {
+            english: "swim",
+            polish: "pływać"
+        },
+        {
+            english: "train",
+            polish: "trenować, ćwiczyć"
+        },
+        {
+            english: "visit",
+            polish: "odwiedzać"
+        },
+        {
+            english: "wake up",
+            polish: "budzić się"
+        }
     ]
 };
 
@@ -295,6 +298,13 @@ let completedWords = new Set();
 let consecutiveIncorrect = false;
 let hasShownError = false;
 let currentUser = null;
+let userStats = {
+    totalSessions: 0,
+    wordsLearned: {},
+    lastList: null,
+    overallScore: 0,
+    sessionHistory: []
+};
 
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -322,7 +332,6 @@ function createStones() {
 }
 
 function initializeQuestions() {
-    // Get words that needed multiple attempts
     const repeatedWords = Object.entries(wordAttempts)
         .filter(([word, attempts]) => attempts > 1)
         .map(([word]) => {
@@ -355,12 +364,10 @@ function updateProgress() {
     const availableWidth = containerWidth - stoneWidth - ufoWidth - padding;
     const stoneSpacing = availableWidth / (wordPairs.length - 1);
     
-    // Calculate alien position to land on the next stone
     const currentStoneIndex = wordPairs.length - remainingQuestions;
     const position = padding + (currentStoneIndex * stoneSpacing);
     alien.style.left = `${position}px`;
     
-    // Add jump animation when moving
     alien.classList.add('jump');
     setTimeout(() => alien.classList.remove('jump'), 500);
     
@@ -387,7 +394,6 @@ function showNextQuestion() {
     const input = questionContainer.querySelector('.answer-input');
     input.focus();
     
-    // Add Enter key event listener
     input.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             checkAnswer();
@@ -395,7 +401,7 @@ function showNextQuestion() {
     });
 }
 
-function checkAnswer() {
+async function checkAnswer() {
     const input = document.querySelector('.answer-input');
     const answer = input.value.trim().toLowerCase();
     const correctAnswer = currentQuestion.english.toLowerCase();
@@ -410,17 +416,22 @@ function checkAnswer() {
         document.querySelector('.question-container').innerHTML += `
             <div class="correct-answer">Correct! Well done! 🎉</div>
         `;
+        
+        await updateWordStats(currentQuestion.english, true);
+        
         setTimeout(() => {
             updateProgress();
             showNextQuestion();
         }, 1000);
         
-        // Spell out the word
         spellWord(currentQuestion.english);
     } else {
         totalQuestions++;
         playSound('wrongSound');
         input.classList.add('incorrect');
+        
+        await updateWordStats(currentQuestion.english, false);
+        
         const wordKey = `${currentQuestion.polish} (${currentQuestion.english})`;
         wordAttempts[wordKey] = (wordAttempts[wordKey] || 0) + 1;
         
@@ -437,16 +448,28 @@ function checkAnswer() {
             consecutiveIncorrect = true;
         }
         
-        // Clear input and keep focus immediately
         input.value = '';
         input.focus();
     }
 }
 
-function showSummary() {
+async function showSummary() {
     const questionArea = document.getElementById('questionArea');
     const summary = document.getElementById('summary');
     const percentage = (correctAnswers / totalQuestions * 100).toFixed(1);
+    
+    userStats.totalSessions++;
+    userStats.overallScore = (userStats.overallScore * (userStats.totalSessions - 1) + (correctAnswers / totalQuestions)) / userStats.totalSessions;
+    
+    userStats.sessionHistory.push({
+        date: new Date().toISOString(),
+        list: userStats.lastList,
+        score: percentage,
+        totalQuestions: totalQuestions,
+        correctAnswers: correctAnswers
+    });
+    
+    await saveUserData();
     
     const repeatedWords = Object.entries(wordAttempts)
         .filter(([word, attempts]) => attempts > 1)
@@ -455,7 +478,6 @@ function showSummary() {
     questionArea.style.display = 'none';
     playSound('completionSound');
     
-    // Start confetti animation
     const duration = 5 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
@@ -512,7 +534,7 @@ function playSound(soundId) {
 function spellWord(word) {
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.lang = 'en-US';
-    utterance.rate = 0.8; // Slightly slower rate for better clarity
+    utterance.rate = 0.8;
     utterance.pitch = 1.0;
     window.speechSynthesis.speak(utterance);
 }
@@ -525,19 +547,20 @@ function showListSelection() {
             <h2>Choose a Word List</h2>
             <div class="list-buttons">
                 <button onclick="selectList('list5')">List 5 (Food & Cooking)</button>
-                <button onclick="selectList('list6')">List 6 (Fruits)</button>
+                <button onclick="selectList('list6')">List 6 (Animals)</button>
             </div>
         </div>
     `;
 }
 
-function selectList(listName) {
+async function selectList(listName) {
     wordPairs = wordPairsList[listName];
+    userStats.lastList = listName;
+    await saveUserData();
     initializeQuestions();
 }
 
-function handleCredentialResponse(response) {
-    // Decode the JWT token to get user information
+async function handleCredentialResponse(response) {
     const responsePayload = jwt_decode(response.credential);
     
     currentUser = {
@@ -546,13 +569,17 @@ function handleCredentialResponse(response) {
         picture: responsePayload.picture
     };
     
-    // Update UI
-    document.getElementById('userName').textContent = `Welcome, ${currentUser.name}!`;
+    await loadUserData();
+    updateUserStatsDisplay();
+    
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('appContent').style.display = 'block';
     
-    // Initialize the app
-    showListSelection();
+    if (userStats.lastList) {
+        selectList(userStats.lastList);
+    } else {
+        showListSelection();
+    }
 }
 
 function signOut() {
@@ -560,5 +587,104 @@ function signOut() {
     currentUser = null;
     document.getElementById('loginSection').style.display = 'block';
     document.getElementById('appContent').style.display = 'none';
-    document.getElementById('userName').textContent = '';
+}
+
+async function saveUserData() {
+    if (currentUser) {
+        const userData = {
+            stats: userStats,
+            lastUpdated: new Date().toISOString()
+        };
+        
+        try {
+            await db.collection('users').doc(currentUser.email).set(userData);
+            console.log('User data saved successfully');
+        } catch (error) {
+            console.error('Error saving user data:', error);
+        }
+    }
+}
+
+async function loadUserData() {
+    if (currentUser) {
+        try {
+            const doc = await db.collection('users').doc(currentUser.email).get();
+            
+            if (doc.exists) {
+                const userData = doc.data();
+                userStats = userData.stats;
+                updateUserStatsDisplay();
+            } else {
+                userStats = {
+                    totalSessions: 0,
+                    wordsLearned: {},
+                    lastList: null,
+                    overallScore: 0,
+                    sessionHistory: []
+                };
+                await saveUserData();
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+        }
+    }
+}
+
+function updateUserStatsDisplay() {
+    if (currentUser) {
+        // Update user info
+        const userInfoDiv = document.getElementById('userName');
+        userInfoDiv.innerHTML = `
+            <div class="user-header">
+                <img src="${currentUser.picture}" alt="${currentUser.name}" class="user-avatar">
+                <span>Welcome, ${currentUser.name}!</span>
+            </div>`;
+
+        // Update stats display
+        const statsDisplay = document.getElementById('userStatsDisplay');
+        const totalWords = Object.keys(userStats.wordsLearned).length;
+        const masteredWords = Object.entries(userStats.wordsLearned)
+            .filter(([_, stats]) => stats.successRate >= 0.8).length;
+        
+        statsDisplay.innerHTML = `
+            <div class="user-stats">
+                <div class="stats-details">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Sessions</span>
+                        <span class="stat-value">${userStats.totalSessions}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Words Learned</span>
+                        <span class="stat-value">${totalWords}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Mastered Words</span>
+                        <span class="stat-value">${masteredWords}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Overall Score</span>
+                        <span class="stat-value">${(userStats.overallScore * 100).toFixed(1)}%</span>
+                    </div>
+                </div>
+            </div>`;
+    }
+}
+
+async function updateWordStats(word, isCorrect) {
+    if (!userStats.wordsLearned[word]) {
+        userStats.wordsLearned[word] = {
+            attempts: 0,
+            successes: 0,
+            lastAttempt: null,
+            successRate: 0
+        };
+    }
+    
+    const stats = userStats.wordsLearned[word];
+    stats.attempts++;
+    if (isCorrect) stats.successes++;
+    stats.lastAttempt = new Date().toISOString();
+    stats.successRate = stats.successes / stats.attempts;
+    
+    await saveUserData();
 } 
