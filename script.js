@@ -466,75 +466,83 @@ async function checkAnswer() {
 }
 
 async function showSummary() {
-    const questionArea = document.getElementById('questionArea');
-    const summary = document.getElementById('summary');
-    const percentage = (correctAnswers / totalQuestions * 100).toFixed(1);
-    
-    userStats.totalSessions++;
-    userStats.overallScore = (userStats.overallScore * (userStats.totalSessions - 1) + (correctAnswers / totalQuestions)) / userStats.totalSessions;
-    
-    userStats.sessionHistory.push({
-        date: new Date().toISOString(),
-        list: userStats.lastList,
-        score: percentage,
-        totalQuestions: totalQuestions,
-        correctAnswers: correctAnswers
-    });
-    
-    await saveUserData();
-    
-    const repeatedWords = Object.entries(wordAttempts)
-        .filter(([word, attempts]) => attempts > 1)
-        .map(([word]) => word);
-    
-    questionArea.style.display = 'none';
-    playSound('completionSound');
-    
-    const duration = 5 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+    try {
+        // Complete the current learning session first
+        await completeLearningSession();
+        
+        const questionArea = document.getElementById('questionArea');
+        const summary = document.getElementById('summary');
+        const percentage = (correctAnswers / totalQuestions * 100).toFixed(1);
+        
+        userStats.totalSessions++;
+        userStats.overallScore = (userStats.overallScore * (userStats.totalSessions - 1) + (correctAnswers / totalQuestions)) / userStats.totalSessions;
+        
+        userStats.sessionHistory.push({
+            date: new Date().toISOString(),
+            list: userStats.lastList,
+            score: percentage,
+            totalQuestions: totalQuestions,
+            correctAnswers: correctAnswers
+        });
+        
+        await saveUserData();
+        
+        const repeatedWords = Object.entries(wordAttempts)
+            .filter(([word, attempts]) => attempts > 1)
+            .map(([word]) => word);
+        
+        questionArea.style.display = 'none';
+        playSound('completionSound');
+        
+        const duration = 5 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-    function randomInRange(min, max) {
-        return Math.random() * (max - min) + min;
-    }
-
-    const interval = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-            return clearInterval(interval);
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
         }
 
-        const particleCount = 50 * (timeLeft / duration);
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
 
-        confetti({
-            ...defaults,
-            particleCount,
-            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-        });
-        confetti({
-            ...defaults,
-            particleCount,
-            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-        });
-    }, 250);
-    
-    summary.innerHTML = `
-        <div class="completion-screen">
-            <h1>🎉 Congratulations, ${currentUser ? currentUser.name : 'Student'}! 🎉</h1>
-            <div class="score">Your Score: ${percentage}%</div>
-            <p>You completed ${totalQuestions} questions with ${correctAnswers} correct answers!</p>
-            ${repeatedWords.length > 0 ? `
-                <div class="repeated-words">
-                    <h3>Words to Practice More:</h3>
-                    <ul>
-                        ${repeatedWords.map(word => `<li>${word}</li>`).join('')}
-                    </ul>
-                </div>
-            ` : ''}
-            <p>Great job! You've completed the lesson! 🚀</p>
-        </div>
-    `;
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+            });
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+            });
+        }, 250);
+        
+        summary.innerHTML = `
+            <div class="completion-screen">
+                <h1>🎉 Congratulations, ${currentUser ? currentUser.name : 'Student'}! 🎉</h1>
+                <div class="score">Your Score: ${percentage}%</div>
+                <p>You completed ${totalQuestions} questions with ${correctAnswers} correct answers!</p>
+                ${repeatedWords.length > 0 ? `
+                    <div class="repeated-words">
+                        <h3>Words to Practice More:</h3>
+                        <ul>
+                            ${repeatedWords.map(word => `<li>${word}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                <p>Great job! You've completed the lesson!</p>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error showing summary:', error);
+        alert('There was an error saving your progress. Please try again.');
+    }
 }
 
 function playSound(soundId) {
@@ -566,10 +574,43 @@ function showListSelection() {
 }
 
 async function selectList(listName) {
-    wordPairs = wordPairsList[listName];
-    userStats.lastList = listName;
-    await saveUserData();
-    initializeQuestions();
+    try {
+        // Start a new learning session first
+        const session = await startLearningSession(listName);
+        if (!session) {
+            alert('Failed to start learning session. Please try again.');
+            return;
+        }
+
+        // Set up the word pairs and initialize the learning session
+        wordPairs = wordPairsList[listName];
+        userStats.lastList = listName;
+        
+        // Initialize questions and UI
+        questions = [...wordPairs];
+        shuffleArray(questions);
+        correctAnswers = 0;
+        totalQuestions = 0;
+        wordAttempts = {};
+        completedWords.clear();
+        consecutiveIncorrect = false;
+        hasShownError = false;
+
+        // Update UI
+        document.getElementById('summary').innerHTML = '';
+        document.getElementById('questionArea').style.display = 'block';
+        createStones();
+        updateProgress();
+        showNextQuestion();
+
+        // Save user data
+        await saveUserData();
+        
+        console.log('Successfully started learning session for list:', listName);
+    } catch (error) {
+        console.error('Error selecting list:', error);
+        alert('There was an error starting the learning session. Please try again.');
+    }
 }
 
 async function handleCredentialResponse(response) {
@@ -685,15 +726,58 @@ async function loadUserData() {
         
         if (doc.exists) {
             const data = doc.data();
+            // Load all user data including listStats
             currentUser.listStats = data.listStats || {};
-            console.log('Successfully loaded user data:', currentUser.listStats);
             
-            // Load recent session history
-            const sessions = await loadUserSessionHistory();
-            console.log('Loaded session history:', sessions);
+            // Calculate overall statistics from listStats
+            userStats = {
+                totalSessions: 0,
+                wordsLearned: {},
+                lastList: null,
+                overallScore: 0,
+                sessionHistory: []
+            };
+            
+            // Aggregate statistics from all lists
+            Object.entries(currentUser.listStats).forEach(([listId, listData]) => {
+                userStats.totalSessions += listData.totalSessions;
+                userStats.lastList = listId; // Keep track of the last list used
+                
+                // Add list sessions to history
+                if (listData.sessions) {
+                    listData.sessions.forEach(session => {
+                        if (session.completed && session.statistics) {
+                            userStats.sessionHistory.push({
+                                date: session.startTime,
+                                list: listId,
+                                score: session.statistics.score,
+                                totalQuestions: session.statistics.totalWords,
+                                correctAnswers: session.statistics.correctAnswers
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // Calculate overall score
+            if (userStats.totalSessions > 0) {
+                userStats.overallScore = userStats.sessionHistory.reduce((acc, session) => acc + session.score, 0) / userStats.sessionHistory.length;
+            }
+            
+            console.log('Successfully loaded user data:', {
+                listStats: currentUser.listStats,
+                userStats: userStats
+            });
         } else {
             console.log('No existing data found for user, initializing with empty stats');
             currentUser.listStats = {};
+            userStats = {
+                totalSessions: 0,
+                wordsLearned: {},
+                lastList: null,
+                overallScore: 0,
+                sessionHistory: []
+            };
             await saveUserData();
         }
     } catch (error) {
@@ -773,27 +857,49 @@ async function startLearningSession(listId) {
     }
     
     try {
-        // Create a new session document
-        const sessionRef = db.collection('users')
-            .doc(currentUser.email)
-            .collection('sessions')
-            .doc();
-            
+        // Create a new session
         const session = {
-            id: sessionRef.id,
-            listId: listId,
+            id: Date.now().toString(),
             startTime: new Date(),
             interactions: [],
             completed: false,
             lastUpdated: new Date()
         };
         
-        // Save the initial session
-        await sessionRef.set(session);
+        // Get current user data
+        const userRef = db.collection('users').doc(currentUser.email);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data() || {};
+        
+        // Initialize listStats if it doesn't exist
+        if (!userData.listStats) {
+            userData.listStats = {};
+        }
+        
+        // Initialize list-specific data if it doesn't exist
+        if (!userData.listStats[listId]) {
+            userData.listStats[listId] = {
+                totalSessions: 0,
+                bestScore: 0,
+                lastScore: 0,
+                totalWords: 0,
+                correctWords: 0,
+                totalTime: 0,
+                sessions: []
+            };
+        }
+        
+        // Add new session to the beginning of the list's sessions array
+        userData.listStats[listId].sessions.unshift(session);
+        userData.listStats[listId].totalSessions++;
+        
+        // Update user document with new session
+        await userRef.set(userData, { merge: true });
         
         // Update local state
         currentSession = session;
         sessionInteractions = [];
+        currentUser.listStats = userData.listStats;
         
         console.log('Successfully started new learning session:', {
             sessionId: session.id,
@@ -818,7 +924,7 @@ async function recordInteraction(word, translation, isCorrect) {
     try {
         const interaction = {
             timestamp: new Date(),
-            word: word,
+            toTranslate: word,
             translation: translation,
             isCorrect: isCorrect
         };
@@ -828,34 +934,59 @@ async function recordInteraction(word, translation, isCorrect) {
         currentSession.interactions = sessionInteractions;
         currentSession.lastUpdated = new Date();
         
-        // Save to Firestore
-        await db.collection('users')
-            .doc(currentUser.email)
-            .collection('sessions')
-            .doc(currentSession.id)
-            .set(currentSession);
+        // Get current user data
+        const userRef = db.collection('users').doc(currentUser.email);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data() || {};
+        
+        // Initialize listStats if it doesn't exist
+        if (!userData.listStats) {
+            userData.listStats = {};
+        }
+        
+        // Initialize list-specific data if it doesn't exist
+        const listId = currentSession.listId;
+        if (!userData.listStats[listId]) {
+            userData.listStats[listId] = {
+                totalSessions: 0,
+                bestScore: 0,
+                lastScore: 0,
+                totalWords: 0,
+                correctWords: 0,
+                totalTime: 0,
+                sessions: []
+            };
+        }
+        
+        // Find and update the current session
+        const listStats = userData.listStats[listId];
+        const sessionIndex = listStats.sessions.findIndex(s => s.id === currentSession.id);
+        
+        if (sessionIndex !== -1) {
+            // Update the session in the array
+            listStats.sessions[sessionIndex] = currentSession;
             
-        console.log('Successfully saved interaction:', {
-            word: word,
-            isCorrect: isCorrect,
-            totalInteractions: sessionInteractions.length
-        });
+            // Update user document with modified data
+            await userRef.set(userData, { merge: true });
+            
+            // Update local state
+            currentUser.listStats = userData.listStats;
+            
+            console.log('Successfully saved interaction:', {
+                word: word,
+                isCorrect: isCorrect,
+                totalInteractions: sessionInteractions.length
+            });
+        } else {
+            console.error('Session not found in listStats:', currentSession.id);
+            // Try to recover by adding the session
+            listStats.sessions.push(currentSession);
+            await userRef.set(userData, { merge: true });
+            currentUser.listStats = userData.listStats;
+        }
     } catch (error) {
         console.error('Error saving interaction:', error);
-        // Try to recover by creating a new session
-        if (error.code === 'permission-denied') {
-            console.log('Attempting to recover session...');
-            try {
-                currentSession = await startLearningSession(currentSession.listId);
-                // Retry saving the interaction
-                await recordInteraction(word, translation, isCorrect);
-            } catch (retryError) {
-                console.error('Failed to recover session:', retryError);
-                alert('Unable to save your progress. Please try signing in again.');
-            }
-        } else {
-            alert('There was an error saving your progress. Please try again.');
-        }
+        alert('There was an error saving your progress. Please try again.');
     }
 }
 
@@ -878,39 +1009,63 @@ async function completeLearningSession() {
         duration: (currentSession.endTime - currentSession.startTime) / 1000 // in seconds
     };
     
-    // Save the completed session under the user's document
-    await db.collection('users')
-        .doc(currentUser.email)
-        .collection('sessions')
-        .doc(currentSession.id)
-        .set(currentSession);
-    
-    // Update user statistics
-    await updateUserStatistics(currentSession.listId, currentSession.statistics);
-    
-    // Reset current session
-    currentSession = null;
-    sessionInteractions = [];
+    try {
+        // Get current user data
+        const userRef = db.collection('users').doc(currentUser.email);
+        const userDoc = await userRef.get();
+        const userData = userDoc.data();
+        
+        // Find the current list and session
+        const listId = currentSession.listId;
+        const listStats = userData.listStats[listId];
+        const sessionIndex = listStats.sessions.findIndex(s => s.id === currentSession.id);
+        
+        if (sessionIndex !== -1) {
+            // Update the session in the array
+            listStats.sessions[sessionIndex] = currentSession;
+            
+            // Update list statistics
+            listStats.lastScore = score;
+            listStats.bestScore = Math.max(listStats.bestScore, score);
+            listStats.totalWords += totalAnswers;
+            listStats.correctWords += correctAnswers;
+            listStats.totalTime += currentSession.statistics.duration;
+            
+            // Update user document with modified data
+            await userRef.set(userData, { merge: true });
+            
+            // Update local state
+            currentUser.listStats = userData.listStats;
+            
+            // Update display
+            updateUserStatsDisplay();
+        }
+        
+        // Reset current session
+        currentSession = null;
+        sessionInteractions = [];
+    } catch (error) {
+        console.error('Error completing learning session:', error);
+        alert('There was an error saving your session results. Please try again.');
+    }
 }
 
 // Add new function to load user's session history
 async function loadUserSessionHistory() {
-    if (!currentUser) return;
+    if (!currentUser) return [];
     
     try {
-        const sessionsSnapshot = await db.collection('users')
-            .doc(currentUser.email)
-            .collection('sessions')
-            .orderBy('startTime', 'desc')
-            .limit(10)
-            .get();
-            
-        const sessions = [];
-        sessionsSnapshot.forEach(doc => {
-            sessions.push(doc.data());
-        });
+        const userDoc = await db.collection('users').doc(currentUser.email).get();
+        const userData = userDoc.data();
         
-        return sessions;
+        if (userData && userData.sessions) {
+            // Sort sessions by startTime in descending order and limit to 10
+            return userData.sessions
+                .sort((a, b) => b.startTime - a.startTime)
+                .slice(0, 10);
+        }
+        
+        return [];
     } catch (error) {
         console.error('Error loading session history:', error);
         return [];
@@ -921,24 +1076,38 @@ async function loadUserSessionHistory() {
 async function updateUserStatistics(listId, statistics) {
     if (!currentUser) return;
     
-    const userData = {
-        stats: {
-            totalSessions: currentUser.listStats.totalSessions || 0,
-            wordsLearned: currentUser.listStats.wordsLearned || {},
-            lastList: listId,
-            overallScore: currentUser.listStats.overallScore || 0,
-            sessionHistory: currentUser.listStats.sessionHistory || []
-        },
-        lastUpdated: new Date().toISOString()
-    };
+    // Update local stats
+    userStats.totalSessions++;
+    userStats.overallScore = (userStats.overallScore * (userStats.totalSessions - 1) + statistics.score) / userStats.totalSessions;
+    
+    // Update list-specific stats
+    if (!currentUser.listStats[listId]) {
+        currentUser.listStats[listId] = {
+            totalSessions: 0,
+            bestScore: 0,
+            lastScore: 0,
+            totalWords: 0,
+            correctWords: 0,
+            totalTime: 0
+        };
+    }
+    
+    const listStats = currentUser.listStats[listId];
+    listStats.totalSessions++;
+    listStats.lastScore = statistics.score;
+    listStats.bestScore = Math.max(listStats.bestScore, statistics.score);
+    listStats.totalWords += statistics.totalWords;
+    listStats.correctWords += statistics.correctAnswers;
+    listStats.totalTime += statistics.duration;
     
     try {
-        console.log('Attempting to update user statistics:', userData);
-        await db.collection('users').doc(currentUser.email).set(userData, { merge: true });
-        console.log('Successfully updated user statistics');
+        // Update user document with new statistics
+        await db.collection('users').doc(currentUser.email).update({
+            listStats: currentUser.listStats,
+            lastUpdated: new Date()
+        });
         
-        // Update current user stats
-        currentUser.listStats = userData.stats;
+        // Update display
         updateUserStatsDisplay();
     } catch (error) {
         console.error('Error updating user statistics:', error);
