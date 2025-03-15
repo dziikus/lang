@@ -306,6 +306,10 @@ let userStats = {
     sessionHistory: []
 };
 
+// Add new function to start a learning session
+let currentSession = null;
+let sessionInteractions = [];
+
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -407,49 +411,57 @@ async function checkAnswer() {
     const correctAnswer = currentQuestion.english.toLowerCase();
     const isCorrect = answer === correctAnswer;
     
-    if (isCorrect) {
-        correctAnswers++;
-        totalQuestions++;
-        playSound('correctSound');
-        input.disabled = true;
-        input.classList.add('correct');
-        document.querySelector('.question-container').innerHTML += `
-            <div class="correct-answer">Correct! Well done! 🎉</div>
-        `;
+    try {
+        // Record the interaction first
+        await recordInteraction(currentQuestion.english, answer, isCorrect);
         
-        await updateWordStats(currentQuestion.english, true);
-        
-        setTimeout(() => {
-            updateProgress();
-            showNextQuestion();
-        }, 1000);
-        
-        spellWord(currentQuestion.english);
-    } else {
-        totalQuestions++;
-        playSound('wrongSound');
-        input.classList.add('incorrect');
-        
-        await updateWordStats(currentQuestion.english, false);
-        
-        const wordKey = `${currentQuestion.polish} (${currentQuestion.english})`;
-        wordAttempts[wordKey] = (wordAttempts[wordKey] || 0) + 1;
-        
-        if (!hasShownError) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'incorrect-answer';
-            messageDiv.textContent = `Incorrect. The correct answer is: "${currentQuestion.english}"`;
-            document.querySelector('.question-container').appendChild(messageDiv);
-            hasShownError = true;
+        if (isCorrect) {
+            correctAnswers++;
+            totalQuestions++;
+            playSound('correctSound');
+            input.disabled = true;
+            input.classList.add('correct');
+            document.querySelector('.question-container').innerHTML += `
+                <div class="correct-answer">Correct! Well done! 🎉</div>
+            `;
+            
+            await updateWordStats(currentQuestion.english, true);
+            
+            setTimeout(() => {
+                updateProgress();
+                showNextQuestion();
+            }, 1000);
+            
+            spellWord(currentQuestion.english);
+        } else {
+            totalQuestions++;
+            playSound('wrongSound');
+            input.classList.add('incorrect');
+            
+            await updateWordStats(currentQuestion.english, false);
+            
+            const wordKey = `${currentQuestion.polish} (${currentQuestion.english})`;
+            wordAttempts[wordKey] = (wordAttempts[wordKey] || 0) + 1;
+            
+            if (!hasShownError) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'incorrect-answer';
+                messageDiv.textContent = `Incorrect. The correct answer is: "${currentQuestion.english}"`;
+                document.querySelector('.question-container').appendChild(messageDiv);
+                hasShownError = true;
+            }
+            
+            if (!consecutiveIncorrect) {
+                questions.push(currentQuestion);
+                consecutiveIncorrect = true;
+            }
+            
+            input.value = '';
+            input.focus();
         }
-        
-        if (!consecutiveIncorrect) {
-            questions.push(currentQuestion);
-            consecutiveIncorrect = true;
-        }
-        
-        input.value = '';
-        input.focus();
+    } catch (error) {
+        console.error('Error in checkAnswer:', error);
+        alert('There was an error saving your progress. Please try again.');
     }
 }
 
@@ -635,90 +647,62 @@ function signOut() {
 
 async function saveUserData() {
     if (!currentUser) {
-        console.error('No current user found when trying to save data');
+        console.error('No user found when trying to save data');
         return;
     }
 
     const userData = {
-        stats: userStats,
-        lastUpdated: new Date().toISOString()
+        name: currentUser.name,
+        email: currentUser.email,
+        listStats: currentUser.listStats || {},
+        lastActive: new Date(),
+        lastUpdated: new Date()
     };
-    
+
     try {
-        console.log('Attempting to save data for user:', currentUser.email);
-        // Use the user's email as the document ID
-        await db.collection('users').doc(currentUser.uid).set(userData);
-        console.log('User data saved successfully');
+        console.log('Attempting to save user data:', userData);
+        await db.collection('users').doc(currentUser.email).set(userData);
+        console.log('Successfully saved user data');
     } catch (error) {
         console.error('Error saving user data:', error);
         if (error.code === 'permission-denied') {
-            console.error('Permission denied. Please check Firestore rules.');
-            alert('Unable to save your data. Please try signing out and back in.');
+            alert('Permission denied: Unable to save user data. Please try signing in again.');
         } else {
-            alert('There was an error saving your data. Your progress may not be saved.');
+            alert('Error saving user data. Please try again.');
         }
-        throw error; // Re-throw to be handled by the caller
     }
 }
 
 async function loadUserData() {
     if (!currentUser) {
-        console.error('No current user found when trying to load data');
+        console.error('No user found when trying to load data');
         return;
     }
 
     try {
-        // Debug logging
-        console.log('Current user state:', {
-            uid: currentUser.uid,
-            name: currentUser.name,
-            email: currentUser.email
-        });
-        
-        // Also verify Firebase Auth state
-        const currentAuthUser = firebase.auth().currentUser;
-        console.log('Firebase Auth current user:', currentAuthUser ? {
-            uid: currentAuthUser.uid,
-            email: currentAuthUser.email,
-            emailVerified: currentAuthUser.emailVerified
-        } : 'No auth user');
-
         console.log('Attempting to load data for user:', currentUser.email);
-        // Use the user's email to fetch data
-        const doc = await db.collection('users').doc(currentUser.uid).get();
+        const doc = await db.collection('users').doc(currentUser.email).get();
         
         if (doc.exists) {
-            console.log('User data found:', doc.data());
-            const userData = doc.data();
-            userStats = userData.stats;
-            updateUserStatsDisplay();
+            const data = doc.data();
+            currentUser.listStats = data.listStats || {};
+            console.log('Successfully loaded user data:', currentUser.listStats);
+            
+            // Load recent session history
+            const sessions = await loadUserSessionHistory();
+            console.log('Loaded session history:', sessions);
         } else {
-            console.log('No existing user data found, initializing new user stats');
-            userStats = {
-                totalSessions: 0,
-                wordsLearned: {},
-                lastList: null,
-                overallScore: 0,
-                sessionHistory: []
-            };
+            console.log('No existing data found for user, initializing with empty stats');
+            currentUser.listStats = {};
             await saveUserData();
         }
     } catch (error) {
         console.error('Error loading user data:', error);
-        // Log more details about the error
-        console.error('Error details:', {
-            code: error.code,
-            message: error.message,
-            stack: error.stack
-        });
-        
         if (error.code === 'permission-denied') {
-            console.error('Permission denied. Please check Firestore rules.');
-            alert('Unable to access your data. Please try signing out and back in.');
+            alert('Permission denied: Unable to load user data. Please try signing in again.');
         } else {
-            alert('There was an error loading your data. Please try refreshing the page.');
+            alert('Error loading user data. Please try again.');
         }
-        throw error; // Re-throw to be handled by the caller
     }
 }
 
@@ -778,5 +762,238 @@ async function updateWordStats(word, isCorrect) {
     stats.lastAttempt = new Date().toISOString();
     stats.successRate = stats.successes / stats.attempts;
     
+    await saveUserData();
+}
+
+// Add new function to start a learning session
+async function startLearningSession(listId) {
+    if (!currentUser) {
+        console.error('No user found when starting session');
+        return null;
+    }
+    
+    try {
+        // Create a new session document
+        const sessionRef = db.collection('users')
+            .doc(currentUser.email)
+            .collection('sessions')
+            .doc();
+            
+        const session = {
+            id: sessionRef.id,
+            listId: listId,
+            startTime: new Date(),
+            interactions: [],
+            completed: false,
+            lastUpdated: new Date()
+        };
+        
+        // Save the initial session
+        await sessionRef.set(session);
+        
+        // Update local state
+        currentSession = session;
+        sessionInteractions = [];
+        
+        console.log('Successfully started new learning session:', {
+            sessionId: session.id,
+            listId: listId
+        });
+        
+        return session;
+    } catch (error) {
+        console.error('Error starting learning session:', error);
+        alert('Unable to start a new learning session. Please try again.');
+        return null;
+    }
+}
+
+// Add new function to record an interaction
+async function recordInteraction(word, translation, isCorrect) {
+    if (!currentSession) {
+        console.error('No active learning session found');
+        return;
+    }
+    
+    try {
+        const interaction = {
+            timestamp: new Date(),
+            word: word,
+            translation: translation,
+            isCorrect: isCorrect
+        };
+        
+        // Update local state
+        sessionInteractions.push(interaction);
+        currentSession.interactions = sessionInteractions;
+        currentSession.lastUpdated = new Date();
+        
+        // Save to Firestore
+        await db.collection('users')
+            .doc(currentUser.email)
+            .collection('sessions')
+            .doc(currentSession.id)
+            .set(currentSession);
+            
+        console.log('Successfully saved interaction:', {
+            word: word,
+            isCorrect: isCorrect,
+            totalInteractions: sessionInteractions.length
+        });
+    } catch (error) {
+        console.error('Error saving interaction:', error);
+        // Try to recover by creating a new session
+        if (error.code === 'permission-denied') {
+            console.log('Attempting to recover session...');
+            try {
+                currentSession = await startLearningSession(currentSession.listId);
+                // Retry saving the interaction
+                await recordInteraction(word, translation, isCorrect);
+            } catch (retryError) {
+                console.error('Failed to recover session:', retryError);
+                alert('Unable to save your progress. Please try signing in again.');
+            }
+        } else {
+            alert('There was an error saving your progress. Please try again.');
+        }
+    }
+}
+
+// Add new function to complete a learning session
+async function completeLearningSession() {
+    if (!currentSession) return;
+    
+    currentSession.completed = true;
+    currentSession.endTime = new Date();
+    
+    // Calculate session statistics
+    const correctAnswers = sessionInteractions.filter(i => i.isCorrect).length;
+    const totalAnswers = sessionInteractions.length;
+    const score = totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0;
+    
+    currentSession.statistics = {
+        totalWords: totalAnswers,
+        correctAnswers: correctAnswers,
+        score: score,
+        duration: (currentSession.endTime - currentSession.startTime) / 1000 // in seconds
+    };
+    
+    // Save the completed session under the user's document
+    await db.collection('users')
+        .doc(currentUser.email)
+        .collection('sessions')
+        .doc(currentSession.id)
+        .set(currentSession);
+    
+    // Update user statistics
+    await updateUserStatistics(currentSession.listId, currentSession.statistics);
+    
+    // Reset current session
+    currentSession = null;
+    sessionInteractions = [];
+}
+
+// Add new function to load user's session history
+async function loadUserSessionHistory() {
+    if (!currentUser) return;
+    
+    try {
+        const sessionsSnapshot = await db.collection('users')
+            .doc(currentUser.email)
+            .collection('sessions')
+            .orderBy('startTime', 'desc')
+            .limit(10)
+            .get();
+            
+        const sessions = [];
+        sessionsSnapshot.forEach(doc => {
+            sessions.push(doc.data());
+        });
+        
+        return sessions;
+    } catch (error) {
+        console.error('Error loading session history:', error);
+        return [];
+    }
+}
+
+// Modify the existing updateUserStatistics function
+async function updateUserStatistics(listId, statistics) {
+    if (!currentUser) return;
+    
+    const userData = {
+        stats: {
+            totalSessions: currentUser.listStats.totalSessions || 0,
+            wordsLearned: currentUser.listStats.wordsLearned || {},
+            lastList: listId,
+            overallScore: currentUser.listStats.overallScore || 0,
+            sessionHistory: currentUser.listStats.sessionHistory || []
+        },
+        lastUpdated: new Date().toISOString()
+    };
+    
+    try {
+        console.log('Attempting to update user statistics:', userData);
+        await db.collection('users').doc(currentUser.email).set(userData, { merge: true });
+        console.log('Successfully updated user statistics');
+        
+        // Update current user stats
+        currentUser.listStats = userData.stats;
+        updateUserStatsDisplay();
+    } catch (error) {
+        console.error('Error updating user statistics:', error);
+        if (error.code === 'permission-denied') {
+            console.error('Permission denied. Please check Firestore rules.');
+            alert('Unable to update user statistics. Please try signing out and back in.');
+        } else {
+            alert('There was an error updating user statistics. Please try again.');
+        }
+    }
+}
+
+async function startLearning() {
+    if (!currentUser) {
+        alert('Please sign in to start learning');
+        return;
+    }
+
+    const listId = currentList.id;
+    if (!currentUser.listStats[listId]) {
+        currentUser.listStats[listId] = {
+            totalWords: 0,
+            correctWords: 0,
+            totalSessions: 0,
+            bestScore: 0,
+            lastScore: 0,
+            totalTime: 0
+        };
+    }
+
+    // Start a new learning session
+    const session = await startLearningSession(listId);
+    if (!session) {
+        alert('Failed to start learning session. Please try again.');
+        return;
+    }
+
+    // Initialize questions and UI
+    wordPairs = wordPairsList[listId];
+    questions = [...wordPairs];
+    shuffleArray(questions);
+    correctAnswers = 0;
+    totalQuestions = 0;
+    wordAttempts = {};
+    completedWords.clear();
+    consecutiveIncorrect = false;
+    hasShownError = false;
+
+    // Update UI
+    document.getElementById('summary').innerHTML = '';
+    document.getElementById('questionArea').style.display = 'block';
+    createStones();
+    updateProgress();
+    showNextQuestion();
+
+    // Save initial state
     await saveUserData();
 } 
