@@ -562,12 +562,44 @@ function spellWord(word) {
 function showListSelection() {
     const container = document.getElementById('questionArea');
     container.style.display = 'block';
+    
+    // Get list statistics
+    const listStats = currentUser?.listStats || {};
+    
+    // Create list buttons with stats
+    const listButtons = Object.entries(wordPairsList).map(([listId, words]) => {
+        const stats = listStats[listId] || { sessions: [] };
+        const completedSessions = stats.sessions?.filter(s => s.completed) || [];
+        const inProgressSession = stats.sessions?.find(s => !s.completed);
+        
+        let progressInfo = '';
+        if (inProgressSession) {
+            const totalWords = wordPairsList[listId].length;
+            const completedWords = inProgressSession.interactions?.length || 0;
+            const progress = Math.round((completedWords / totalWords) * 100);
+            progressInfo = `<div class="progress-info">In progress: ${progress}%</div>`;
+        }
+        
+        return `
+            <div class="list-card">
+                <h3>${listId === 'list5' ? 'Food & Cooking' : 'Animals'}</h3>
+                <div class="list-stats">
+                    <div class="stat">Sessions completed: ${completedSessions.length}</div>
+                    ${progressInfo}
+                </div>
+                <div class="word-count">${words.length} words</div>
+                <button onclick="selectList('${listId}')">
+                    ${inProgressSession ? 'Continue Session' : 'Start New Session'}
+                </button>
+            </div>
+        `;
+    }).join('');
+    
     container.innerHTML = `
         <div class="list-selection">
             <h2>Choose a Word List</h2>
-            <div class="list-buttons">
-                <button onclick="selectList('list5')">List 5 (Food & Cooking)</button>
-                <button onclick="selectList('list6')">List 6 (Animals)</button>
+            <div class="list-grid">
+                ${listButtons}
             </div>
         </div>
     `;
@@ -575,26 +607,73 @@ function showListSelection() {
 
 async function selectList(listName) {
     try {
-        // Start a new learning session first
-        const session = await startLearningSession(listName);
-        if (!session) {
-            alert('Failed to start learning session. Please try again.');
-            return;
-        }
-
-        // Set up the word pairs and initialize the learning session
-        wordPairs = wordPairsList[listName];
-        userStats.lastList = listName;
+        // Check if there's an in-progress session
+        const listStats = currentUser?.listStats?.[listName] || {};
+        const inProgressSession = listStats.sessions?.find(s => !s.completed);
         
-        // Initialize questions and UI
-        questions = [...wordPairs];
-        shuffleArray(questions);
-        correctAnswers = 0;
-        totalQuestions = 0;
-        wordAttempts = {};
-        completedWords.clear();
-        consecutiveIncorrect = false;
-        hasShownError = false;
+        if (inProgressSession) {
+            // Continue existing session
+            currentSession = inProgressSession;
+            sessionInteractions = inProgressSession.interactions || [];
+            
+            // Set up the word pairs
+            wordPairs = wordPairsList[listName];
+            userStats.lastList = listName;
+            
+            // Initialize questions and UI
+            questions = [...wordPairs];
+            // Remove words that were already answered correctly
+            questions = questions.filter(word => 
+                !sessionInteractions.some(i => 
+                    i.toTranslate === word.english && i.isCorrect
+                )
+            );
+            shuffleArray(questions);
+            
+            // Update counters based on existing interactions
+            correctAnswers = sessionInteractions.filter(i => i.isCorrect).length;
+            totalQuestions = sessionInteractions.length;
+            wordAttempts = {};
+            completedWords = new Set(
+                sessionInteractions
+                    .filter(i => i.isCorrect)
+                    .map(i => i.toTranslate)
+            );
+            consecutiveIncorrect = false;
+            hasShownError = false;
+            
+            console.log('Continuing existing session:', {
+                sessionId: currentSession.id,
+                completedWords: completedWords.size,
+                remainingQuestions: questions.length
+            });
+        } else {
+            // Start a new learning session
+            const session = await startLearningSession(listName);
+            if (!session) {
+                alert('Failed to start learning session. Please try again.');
+                return;
+            }
+
+            // Set up the word pairs and initialize the learning session
+            wordPairs = wordPairsList[listName];
+            userStats.lastList = listName;
+            
+            // Initialize questions and UI
+            questions = [...wordPairs];
+            shuffleArray(questions);
+            correctAnswers = 0;
+            totalQuestions = 0;
+            wordAttempts = {};
+            completedWords.clear();
+            consecutiveIncorrect = false;
+            hasShownError = false;
+            
+            console.log('Started new learning session:', {
+                sessionId: session.id,
+                listId: listName
+            });
+        }
 
         // Update UI
         document.getElementById('summary').innerHTML = '';
@@ -606,7 +685,6 @@ async function selectList(listName) {
         // Save user data
         await saveUserData();
         
-        console.log('Successfully started learning session for list:', listName);
     } catch (error) {
         console.error('Error selecting list:', error);
         alert('There was an error starting the learning session. Please try again.');
@@ -799,34 +877,6 @@ function updateUserStatsDisplay() {
                 <img src="${currentUser.picture}" alt="${currentUser.name}" class="user-avatar">
                 <span>Welcome, ${currentUser.name}!</span>
             </div>`;
-
-        // Update stats display
-        const statsDisplay = document.getElementById('userStatsDisplay');
-        const totalWords = Object.keys(userStats.wordsLearned).length;
-        const masteredWords = Object.entries(userStats.wordsLearned)
-            .filter(([_, stats]) => stats.successRate >= 0.8).length;
-        
-        statsDisplay.innerHTML = `
-            <div class="user-stats">
-                <div class="stats-details">
-                    <div class="stat-item">
-                        <span class="stat-label">Total Sessions</span>
-                        <span class="stat-value">${userStats.totalSessions}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Words Learned</span>
-                        <span class="stat-value">${totalWords}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Mastered Words</span>
-                        <span class="stat-value">${masteredWords}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Overall Score</span>
-                        <span class="stat-value">${(userStats.overallScore * 100).toFixed(1)}%</span>
-                    </div>
-                </div>
-            </div>`;
     }
 }
 
@@ -860,6 +910,7 @@ async function startLearningSession(listId) {
         // Create a new session
         const session = {
             id: Date.now().toString(),
+            listId: listId,
             startTime: new Date(),
             interactions: [],
             completed: false,
@@ -944,8 +995,14 @@ async function recordInteraction(word, translation, isCorrect) {
             userData.listStats = {};
         }
         
-        // Initialize list-specific data if it doesn't exist
+        // Get the listId from the current session
         const listId = currentSession.listId;
+        if (!listId) {
+            console.error('No listId found in current session');
+            return;
+        }
+        
+        // Initialize list-specific data if it doesn't exist
         if (!userData.listStats[listId]) {
             userData.listStats[listId] = {
                 totalSessions: 0,
@@ -975,10 +1032,15 @@ async function recordInteraction(word, translation, isCorrect) {
             console.log('Successfully saved interaction:', {
                 word: word,
                 isCorrect: isCorrect,
-                totalInteractions: sessionInteractions.length
+                totalInteractions: sessionInteractions.length,
+                listId: listId,
+                sessionId: currentSession.id
             });
         } else {
-            console.error('Session not found in listStats:', currentSession.id);
+            console.error('Session not found in listStats:', {
+                sessionId: currentSession.id,
+                listId: listId
+            });
             // Try to recover by adding the session
             listStats.sessions.push(currentSession);
             await userRef.set(userData, { merge: true });
