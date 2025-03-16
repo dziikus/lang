@@ -390,6 +390,7 @@ function showNextQuestion() {
     const questionContainer = document.getElementById('questionArea');
     questionContainer.innerHTML = `
         <div class="question-container">
+            <button onclick="showListSelection()" class="nav-button">Back to Lists</button>
             <div class="question">Translate to English: "${currentQuestion.polish}"</div>
             <input type="text" class="answer-input" placeholder="Type your answer..." autocomplete="off">
             <button onclick="checkAnswer()">Check Answer</button>
@@ -525,6 +526,7 @@ async function showSummary() {
         
         summary.innerHTML = `
             <div class="completion-screen">
+                <button onclick="showListSelection()" class="nav-button">Back to Lists</button>
                 <h1>🎉 Congratulations, ${currentUser ? currentUser.name : 'Student'}! 🎉</h1>
                 <div class="score">Your Score: ${percentage}%</div>
                 <p>You completed ${totalQuestions} questions with ${correctAnswers} correct answers!</p>

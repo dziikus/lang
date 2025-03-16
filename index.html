@@ -69,11 +69,45 @@
             );
 
             // Set up Firebase Auth state observer
-            firebase.auth().onAuthStateChanged(function(user) {
+            firebase.auth().onAuthStateChanged(async function(user) {
                 if (user) {
                     console.log('User is signed in:', user);
+                    // Get the user's profile information
+                    const responsePayload = {
+                        name: user.displayName,
+                        email: user.email,
+                        picture: user.photoURL,
+                        uid: user.uid
+                    };
+                    
+                    // Set current user
+                    currentUser = responsePayload;
+                    
+                    // Load user data
+                    await loadUserData();
+                    updateUserStatsDisplay();
+                    
+                    // Hide login section and show app content
+                    const loginSection = document.getElementById('loginSection');
+                    const appContent = document.getElementById('appContent');
+                    
+                    if (loginSection && appContent) {
+                        loginSection.style.display = 'none';
+                        appContent.style.display = 'block';
+                        
+                        // Show list selection screen
+                        showListSelection();
+                    }
                 } else {
                     console.log('No user is signed in.');
+                    currentUser = null;
+                    const loginSection = document.getElementById('loginSection');
+                    const appContent = document.getElementById('appContent');
+                    
+                    if (loginSection && appContent) {
+                        loginSection.style.display = 'block';
+                        appContent.style.display = 'none';
+                    }
                 }
             });
 
