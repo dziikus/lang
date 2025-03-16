@@ -730,11 +730,8 @@ async function handleCredentialResponse(response) {
                 loginSection.style.display = 'none';
                 appContent.style.display = 'block';
                 
-                if (userStats.lastList) {
-                    selectList(userStats.lastList);
-                } else {
-                    showListSelection();
-                }
+                // Always show list selection screen first
+                showListSelection();
             } else {
                 console.error("Required DOM elements not found");
             }
