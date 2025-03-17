@@ -4,6 +4,14 @@
 const wordPairsList = {
     list5: [
         {
+            english: "chewing gum",
+            polish: "guma do żucia"
+        },
+        {
+            english: "chips",
+            polish: "frytki"
+        },
+        {
             english: "breakfast",
             polish: "śniadanie"
         },
@@ -33,11 +41,11 @@ const wordPairsList = {
         },
         {
             english: "boil",
-            polish: "gotować (np wodę)"
+            polish: "gotować"
         },
         {
             english: "cook",
-            polish: "gotować (np. mięso)"
+            polish: "gotować"
         },
         {
             english: "cut",
@@ -66,8 +74,144 @@ const wordPairsList = {
         {
             english: "a few",
             polish: "kilka"
+        },
+        {
+            english: "fork",
+            polish: "widelec"
+        },
+        {
+            english: "glass",
+            polish: "szklanka"
+        },
+        {
+            english: "hungry",
+            polish: "głodny"
+        },
+        {
+            english: "knife",
+            polish: "nóż"
+        },
+        {
+            english: "pill",
+            polish: "tabletka"
+        },
+        {
+            english: "plate",
+            polish: "talerz"
+        },
+        {
+            english: "slice",
+            polish: "plasterek (np. wędliny), kromka"
+        },
+        {
+            english: "spoon",
+            polish: "łyżka"
+        },
+        {
+            english: "tasty",
+            polish: "smaczny"
+        },
+        {
+            english: "vinegar",
+            polish: "ocet"
+        },
+  {
+            english: "bread",
+            polish: "chleb"
+        },
+        {
+            english: "butter",
+            polish: "masło"
+        },
+        {
+            english: "cake",
+            polish: "ciasto, ciastko"
+        },
+        {
+            english: "cheese",
+            polish: "ser"
+        },
+        {
+            english: "egg",
+            polish: "jajko"
+        },
+        {
+            english: "fish",
+            polish: "ryba"
+        },
+        {
+            english: "honey",
+            polish: "miód"
+        },
+        {
+            english: "ice cream",
+            polish: "lody"
+        },
+        {
+            english: "juice",
+            polish: "sok"
+        },
+        {
+            english: "milk",
+            polish: "mleko"
+        },
+        {
+            english: "milkshake",
+            polish: "koktajl mleczny"
+        },
+        {
+            english: "pasta",
+            polish: "makaron"
+        },
+        {
+            english: "potatoes",
+            polish: "ziemniaki"
+        },
+        {
+            english: "salad",
+            polish: "sałatka"
+        },
+        {
+            english: "salt",
+            polish: "sól"
+        },
+        {
+            english: "sandwich",
+            polish: "kanapka"
+        },
+        {
+            english: "soup",
+            polish: "zupa"
+        },
+        {
+            english: "strawberry",
+            polish: "truskawka"
+        },
+        {
+            english: "sugar",
+            polish: "cukier"
+        },
+        {
+            english: "sparkling water",
+            polish: "woda gazowana"
+        },
+        {
+            english: "still water",
+            polish: "woda niegazowana"
+        },
+        {
+            english: "tea",
+            polish: "herbata"
+        },
+        {
+            english: "tomato",
+            polish: "pomidor"
+        },
+        {
+            english: "yoghurt",
+            polish: "jogurt"
         }
-    ],
+],
     list6: [
         {
             english: "walk",
