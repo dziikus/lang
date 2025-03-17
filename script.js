@@ -41,11 +41,11 @@ const wordPairsList = {
         },
         {
             english: "boil",
-            polish: "gotować"
+            polish: "gotować (np wode)"
         },
         {
             english: "cook",
-            polish: "gotować"
+            polish: "gotować (np mieso)"
         },
         {
             english: "cut",
