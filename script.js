@@ -728,7 +728,7 @@ function showListSelection() {
         
         return `
             <div class="list-card">
-                <h3>${listId === 'list5' ? 'Food & Cooking' : 'Animals'}</h3>
+                <h3>${listId}</h3>
                 <div class="list-stats">
                     <div class="stat">Sessions completed: ${completedSessions.length}</div>
                     ${progressInfo}
