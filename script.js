@@ -2,7 +2,7 @@
 // db is already initialized in index.html
 
 const wordPairsList = {
-    list5: [
+    unit5_1: [
         {
             english: "chewing gum",
             polish: "guma do żucia"
@@ -66,7 +66,9 @@ const wordPairsList = {
         {
             english: "serve",
             polish: "podawać"
-        },
+        }
+    ],
+    unit5_2: [
         {
             english: "delicious",
             polish: "pyszny"
@@ -115,7 +117,7 @@ const wordPairsList = {
             english: "vinegar",
             polish: "ocet"
         },
-  {
+        {
             english: "bread",
             polish: "chleb"
         },
@@ -130,7 +132,9 @@ const wordPairsList = {
         {
             english: "cheese",
             polish: "ser"
-        },
+        }
+    ],
+    unit5_3: [
         {
             english: "egg",
             polish: "jajko"
@@ -212,7 +216,7 @@ const wordPairsList = {
             polish: "jogurt"
         }
 ],
-    list6: [
+    unit6: [
         {
             english: "walk",
             polish: "chodzić pieszo, spacerować"
