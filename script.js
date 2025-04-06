@@ -234,7 +234,7 @@ const wordPairsList = {
             polish: "jogurt"
         }
 ],
-    unit6: [
+    unit6_1: [
         {
             english: "walk",
             polish: "chodzić pieszo, spacerować"
@@ -306,7 +306,9 @@ const wordPairsList = {
         {
             english: "beach",
             polish: "plaża"
-        },
+        }
+    ],
+    unit6_2: [
         {
             english: "both",
             polish: "obydwoje"
@@ -378,7 +380,9 @@ const wordPairsList = {
         {
             english: "drive",
             polish: "prowadzić samochód, jeździć"
-        },
+        }
+    ],
+    unit6_3: [
         {
             english: "eat",
             polish: "jeść"
