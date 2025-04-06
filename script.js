@@ -2,6 +2,24 @@
 // db is already initialized in index.html
 
 const wordPairsList = {
+    test: [
+        {
+            english: "one",
+            polish: "jeden"
+        },
+        {
+            english: "two",
+            polish: "dwa"
+        },
+        {
+            english: "three",
+            polish: "trzy"
+        },
+        {
+            english: "four",
+            polish: "cztery"
+        }
+    ],
     unit5_1: [
         {
             english: "chewing gum",
@@ -536,14 +554,20 @@ function showNextQuestion() {
     currentQuestion = questions.shift();
     hasShownError = false;
     const questionContainer = document.getElementById('questionArea');
+    const isTestMode = questionContainer.classList.contains('test-mode');
+    
     questionContainer.innerHTML = `
         <div class="question-container">
             <button onclick="showListSelection()" class="nav-button">Back to Lists</button>
             <div class="question">Translate to English: "${currentQuestion.polish}"</div>
-            <input type="text" class="answer-input" placeholder="Type your answer..." autocomplete="off">
-            <button onclick="checkAnswer()">Check Answer</button>
+            <input type="text" class="answer-input" placeholder="Type your answer and press Enter..." autocomplete="off">
         </div>
     `;
+    
+    if (isTestMode) {
+        questionContainer.classList.add('test-mode');
+    }
+    
     const input = questionContainer.querySelector('.answer-input');
     input.focus();
     
@@ -576,6 +600,9 @@ async function checkAnswer() {
             
             await updateWordStats(currentQuestion.english, true);
             
+            // Disable input and remove event listener during delay
+            input.removeEventListener('keypress', checkAnswer);
+            
             setTimeout(() => {
                 updateProgress();
                 showNextQuestion();
@@ -605,8 +632,16 @@ async function checkAnswer() {
                 consecutiveIncorrect = true;
             }
             
+            // Disable input and remove event listener during delay
+            input.disabled = true;
+            input.removeEventListener('keypress', checkAnswer);
             input.value = '';
-            input.focus();
+
+            // Automatically proceed to next question after a delay
+            setTimeout(() => {
+                updateProgress();
+                showNextQuestion();
+            }, 2000);
         }
     } catch (error) {
         console.error('Error in checkAnswer:', error);
@@ -720,27 +755,31 @@ function showListSelection() {
     const listButtons = Object.entries(wordPairsList).map(([listId, words]) => {
         const stats = listStats[listId] || { sessions: [] };
         const completedSessions = stats.sessions?.filter(s => s.completed) || [];
-        const inProgressSession = stats.sessions?.find(s => !s.completed);
+        const testSessions = completedSessions.filter(s => s.type === 'test');
+        const learnSessions = completedSessions.filter(s => s.type === 'learn');
         
-        let progressInfo = '';
-        if (inProgressSession) {
-            const totalWords = wordPairsList[listId].length;
-            const completedWords = inProgressSession.interactions?.length || 0;
-            const progress = Math.round((completedWords / totalWords) * 100);
-            progressInfo = `<div class="progress-info">In progress: ${progress}%</div>`;
-        }
+        // Calculate best test score
+        const bestTestScore = testSessions.length > 0 
+            ? Math.max(...testSessions.map(s => s.statistics?.score || 0))
+            : 0;
         
         return `
             <div class="list-card">
                 <h3>${listId}</h3>
                 <div class="list-stats">
-                    <div class="stat">Sessions completed: ${completedSessions.length}</div>
-                    ${progressInfo}
+                    <div class="stat">Learning sessions: ${learnSessions.length}</div>
+                    <div class="stat">Test sessions: ${testSessions.length}</div>
+                    <div class="stat">Best test score: ${bestTestScore.toFixed(1)}%</div>
                 </div>
                 <div class="word-count">${words.length} words</div>
-                <button onclick="selectList('${listId}')">
-                    ${inProgressSession ? 'Continue Session' : 'Start New Session'}
-                </button>
+                <div class="button-group">
+                    <button onclick="startLearning('${listId}')" class="learn-button">
+                        Learn
+                    </button>
+                    <button onclick="startTest('${listId}')" class="test-button">
+                        Test
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
@@ -993,6 +1032,9 @@ async function loadUserData() {
                 listStats: currentUser.listStats,
                 userStats: userStats
             });
+            
+            // Update the list selection screen to reflect the correct button states
+            showListSelection();
         } else {
             console.log('No existing data found for user, initializing with empty stats');
             currentUser.listStats = {};
@@ -1004,6 +1046,7 @@ async function loadUserData() {
                 sessionHistory: []
             };
             await saveUserData();
+            showListSelection();
         }
     } catch (error) {
         console.error('Error loading user data:', error);
@@ -1047,7 +1090,7 @@ async function updateWordStats(word, isCorrect) {
 }
 
 // Add new function to start a learning session
-async function startLearningSession(listId) {
+async function startLearningSession(listId, type = 'learn') {
     if (!currentUser) {
         console.error('No user found when starting session');
         return null;
@@ -1058,6 +1101,7 @@ async function startLearningSession(listId) {
         const session = {
             id: Date.now().toString(),
             listId: listId,
+            type: type,
             startTime: new Date(),
             interactions: [],
             completed: false,
@@ -1099,15 +1143,16 @@ async function startLearningSession(listId) {
         sessionInteractions = [];
         currentUser.listStats = userData.listStats;
         
-        console.log('Successfully started new learning session:', {
+        console.log('Successfully started new session:', {
             sessionId: session.id,
-            listId: listId
+            listId: listId,
+            type: type
         });
         
         return session;
     } catch (error) {
-        console.error('Error starting learning session:', error);
-        alert('Unable to start a new learning session. Please try again.');
+        console.error('Error starting session:', error);
+        alert('Unable to start a new session. Please try again.');
         return null;
     }
 }
@@ -1329,49 +1374,120 @@ async function updateUserStatistics(listId, statistics) {
     }
 }
 
-async function startLearning() {
-    if (!currentUser) {
-        alert('Please sign in to start learning');
-        return;
+async function startLearning(listId) {
+    try {
+        // Get list statistics to find difficult words
+        const listStats = currentUser?.listStats?.[listId] || { sessions: [] };
+        const recentSessions = listStats.sessions
+            .filter(s => s.completed)
+            .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
+            .slice(0, 5); // Look at last 5 sessions
+
+        // Find words that were answered incorrectly
+        const difficultWords = new Set();
+        recentSessions.forEach(session => {
+            session.interactions?.forEach(interaction => {
+                if (!interaction.isCorrect) {
+                    difficultWords.add(interaction.toTranslate);
+                }
+            });
+        });
+
+        // Check if all words are well learned (80% success rate)
+        const allWords = wordPairsList[listId];
+        const allWordsLearned = allWords.every(word => {
+            const wordStats = listStats.wordsLearned?.[word.english] || {};
+            return wordStats.successRate >= 0.8;
+        });
+
+        // If all words are well learned and no difficult words, start a test session
+        if (allWordsLearned && difficultWords.size === 0) {
+            await startTest(listId);
+            return;
+        }
+
+        // Use difficult words for learning session, or all words if no difficult words found
+        wordPairs = difficultWords.size > 0 
+            ? wordPairsList[listId].filter(pair => difficultWords.has(pair.english))
+            : wordPairsList[listId];
+
+        // Start new learning session
+        const session = await startLearningSession(listId, 'learn');
+        if (!session) {
+            alert('Failed to start learning session. Please try again.');
+            return;
+        }
+
+        // Initialize session
+        questions = [...wordPairs];
+        shuffleArray(questions);
+        correctAnswers = 0;
+        totalQuestions = 0;
+        wordAttempts = {};
+        completedWords.clear();
+        consecutiveIncorrect = false;
+        hasShownError = false;
+
+        // Update UI
+        document.getElementById('summary').innerHTML = '';
+        document.getElementById('questionArea').style.display = 'block';
+        createStones();
+        updateProgress();
+        showNextQuestion();
+    } catch (error) {
+        console.error('Error starting learning session:', error);
+        alert('There was an error starting the learning session. Please try again.');
     }
+}
 
-    const listId = currentList.id;
-    if (!currentUser.listStats[listId]) {
-        currentUser.listStats[listId] = {
-            totalWords: 0,
-            correctWords: 0,
-            totalSessions: 0,
-            bestScore: 0,
-            lastScore: 0,
-            totalTime: 0
-        };
+async function startTest(listId) {
+    try {
+        // Get list statistics
+        const listStats = currentUser?.listStats?.[listId] || { sessions: [] };
+        
+        // Check if all words are well learned
+        const allWords = wordPairsList[listId];
+        const allWordsLearned = allWords.every(word => {
+            const wordStats = listStats.wordsLearned?.[word.english] || {};
+            return wordStats.successRate >= 0.8; // 80% success rate threshold
+        });
+        
+        // If not all words are well learned, redirect to learning mode
+        if (!allWordsLearned) {
+            await startLearning(listId);
+            return;
+        }
+
+        // Use all words for test
+        wordPairs = wordPairsList[listId];
+
+        // Start new test session
+        const session = await startLearningSession(listId, 'test');
+        if (!session) {
+            alert('Failed to start test session. Please try again.');
+            return;
+        }
+
+        // Initialize session
+        questions = [...wordPairs];
+        shuffleArray(questions);
+        correctAnswers = 0;
+        totalQuestions = 0;
+        wordAttempts = {};
+        completedWords.clear();
+        consecutiveIncorrect = false;
+        hasShownError = false;
+
+        // Update UI
+        document.getElementById('summary').innerHTML = '';
+        const questionArea = document.getElementById('questionArea');
+        questionArea.style.display = 'block';
+        questionArea.classList.add('test-mode');
+        createStones();
+        updateProgress();
+        showNextQuestion();
+    } catch (error) {
+        console.error('Error starting test session:', error);
+        alert('There was an error starting the test session. Please try again.');
     }
-
-    // Start a new learning session
-    const session = await startLearningSession(listId);
-    if (!session) {
-        alert('Failed to start learning session. Please try again.');
-        return;
-    }
-
-    // Initialize questions and UI
-    wordPairs = wordPairsList[listId];
-    questions = [...wordPairs];
-    shuffleArray(questions);
-    correctAnswers = 0;
-    totalQuestions = 0;
-    wordAttempts = {};
-    completedWords.clear();
-    consecutiveIncorrect = false;
-    hasShownError = false;
-
-    // Update UI
-    document.getElementById('summary').innerHTML = '';
-    document.getElementById('questionArea').style.display = 'block';
-    createStones();
-    updateProgress();
-    showNextQuestion();
-
-    // Save initial state
-    await saveUserData();
 } 

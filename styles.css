@@ -586,4 +586,109 @@ button:disabled {
 
 .list-card button:hover {
     background: #45a049;
+}
+
+.list-card button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    opacity: 0.6;
+    border: 1px solid #999999;
+}
+
+.list-card .learn-button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+}
+
+.list-card .test-button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.learn-button, .test-button {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.learn-button {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.learn-button:hover {
+    background-color: #45a049;
+}
+
+.test-button {
+    background-color: #2196F3;
+    color: white;
+}
+
+.test-button:hover {
+    background-color: #1976D2;
+}
+
+.list-stats {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.stat {
+    margin: 5px 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.question-area.test-mode {
+    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+    color: white;
+}
+
+.question-area.test-mode .question {
+    color: white;
+    font-weight: bold;
+}
+
+.question-area.test-mode .answer-input {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.question-area.test-mode .answer-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.question-area.test-mode .nav-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.question-area.test-mode .nav-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.question-area.test-mode .correct-answer {
+    color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.question-area.test-mode .incorrect-answer {
+    color: #f44336;
+    background-color: rgba(244, 67, 54, 0.1);
 } 
