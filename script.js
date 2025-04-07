@@ -1385,7 +1385,7 @@ async function startLearning(listId) {
         const recentSessions = listStats.sessions
             .filter(s => s.completed)
             .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
-            .slice(0, 5); // Look at last 5 sessions
+            .slice(0, 1); // Look at last 1 session
 
         // Find words that were answered incorrectly
         const difficultWords = new Set();
